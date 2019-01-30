@@ -1,0 +1,199 @@
+<!doctype html>
+<html>
+<head>
+    <title>E</title>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div id="main"></div>
+</body>
+<style>
+    #main div {
+        width: 30px;
+        height: 30px;
+        display: inline-block;
+        text-align: center;
+        border: 3px solid;
+        margin: 0 1px 1px 0;
+    }
+</style>
+<script>
+class Cell {
+    constructor(title, value, startX, startY) {
+        this.value = value;
+        this.x = startX;
+        this.y = startY;
+        this.title = title;
+        this.activeX = false;
+        this.activeY = false;
+    }
+
+    generateColor(stepX, stepY) {
+        //accept x
+        this.colorR = 255 - (stepX * this.x);
+
+        //accept y
+        this.colorG = 255 - (stepY * this.y);
+
+        this.colorB = stepY * this.y;
+        return this;
+    }
+
+    render(x, y) {
+        let s = 'background-color:rgb(' + parseInt(this.colorR) + ', ' + parseInt(this.colorG) + ', ' + parseInt(this.colorB) + ');';
+        return '<div class="cell" data-x="' + x + '" data-y="' + y + '" style="' + s + '">' + this.title + '</div>';
+    }
+}
+class Field {
+    constructor(block, w, h) {
+        let width = parseInt(w);
+        let height = parseInt(h);
+        this.width =  width > 1 ? width : 2;
+        this.height =  height > 1 ? height : 2;
+        this.containerBlock = document.getElementById(block);
+        if (this.containerBlock === null) {
+            throw new Error('Invalid block');
+        }
+        this.initField();
+        this.render();
+        this.defineEvents(this);
+    }
+
+    defineEvents() {
+        jQuery(document).on('mousedown', '.cell', function () {
+            jQuery('.cell').css('border-color', '#000000');
+            f.activeX = jQuery(this).data('x');
+            f.activeY = jQuery(this).data('y');
+            f.setActiveCell();
+            console.log('down')
+        });
+
+        jQuery(document).on('keypress', function (event) {
+            console.log(event.which);
+            if (typeof f.activeX == 'undefined' || typeof f.activeY == 'undefined' || f.activeX === false || f.activeY === false) {
+                console.log('no active');
+                return;
+            }
+            switch (event.which) {
+                case 100:
+                    f.moveX(f.activeY, 1);
+                    break;
+                case 115:
+                    f.moveY(f.activeX, 1);
+                    break;
+                case 97:
+                    f.moveX(f.activeY, -1);
+                    break;
+                case 119:
+                    f.moveY(f.activeX, -1);
+                    break;
+            }
+            f.setActiveCell();
+        });
+    }
+
+    setActiveCell() {
+        let selector = '[data-x=' + f.activeX + '][data-y=' + f.activeY + ']';
+        jQuery(selector).css('border-color', '#ff0000');
+    }
+
+    initField() {
+        this.field = [];
+        this.result = [];
+        let stepX = 255 / this.width;
+        let stepY = 255 / this.height;
+        for (var j = 0; j < this.height; j++) {
+            this.field[j] = [];
+            this.result[j] = [];
+            for (var i = 0; i < this.width; i++) {
+                this.result[j][i] = this.getValue(i, j);
+                this.field[j][i] = new Cell(
+                    this.getTitle(i, j),
+                    this.result[j][i],
+                    i,
+                    j
+                ).generateColor(
+                    stepX,
+                    stepY
+                );
+            }
+        }
+    }
+
+    /* direction 1 or -1 */
+    moveX(row, direction) {
+        if (direction > 0) {
+            let last = this.field[row].pop();
+            this.field[row].unshift(last);
+        } else {
+            let first = this.field[row].shift();
+            this.field[row].push(first);
+        }
+        this.tic();
+    }
+
+    moveY(col, direction) {
+        if (direction > 0) {
+            for (let row = this.height - 1; row > 0; row--) {
+                let a = this.field[row][col];
+                this.field[row][col] = this.field[row - 1][col];
+                this.field[row - 1][col] = a;
+            }
+        } else {
+            for (let row = 0; row < this.height - 1; row++) {
+                let a = this.field[row][col];
+                this.field[row][col] = this.field[row + 1][col];
+                this.field[row + 1][col] = a;
+            }
+        }
+
+        this.tic();
+    }
+
+    getValue(x, y) {
+        return 1 + (this.width * y) + x;
+    }
+
+    getTitle(x, y) {
+        return 1 + (this.width * y) + x;
+    }
+
+    tic() {
+        if (this.successField()) {
+            console.log('DONE');
+        } else {
+            console.log('Keep going');
+        }
+        this.render();
+    }
+
+    successField() {
+        for (let y in this.field) {
+            for (let x in this.field[y]) {
+                if (this.field[y][x].value != this.result[y][x]) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    render() {
+        this.containerBlock.innerHTML = '';
+        for (let y in this.field) {
+            for (let x in this.field[y]) {
+                this.containerBlock.innerHTML += this.field[y][x].render(x, y);
+            }
+            this.containerBlock.innerHTML += '<br>';
+        }
+    }
+}
+
+var f = null;
+jQuery(document).ready(function () {
+    f = new Field('main', 20, 20);
+    console.log(f);
+});
+
+</script>
+</html>
