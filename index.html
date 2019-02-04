@@ -33,7 +33,7 @@ class Cell {
         this.colorR = 255 - (stepX * this.x);
 
         //accept y
-        this.colorG = 255 - (stepY * this.y);
+        this.colorG = parseInt(Math.sqrt((this.x*this.x*stepX)+(this.y*this.y*stepY)) * 0.71);
 
         this.colorB = stepY * this.y;
         return this;
